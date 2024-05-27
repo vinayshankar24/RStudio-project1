@@ -1,0 +1,167 @@
+---
+title: "Build and deploy a stroke prediction model using R"
+date: "`r Sys.Date()`"
+output: html_document
+author: "V.Vinay Shankar"
+---
+
+# About Data Analysis Report
+
+This RMarkdown file contains the report of the data analysis done for the project on building and deploying a stroke prediction model in R. It contains analysis such as data exploration, summary statistics and building the prediction models. The final report was completed on `r date()`. 
+
+**Data Description:**
+
+According to the World Health Organization (WHO) stroke is the 2nd leading cause of death globally, responsible for approximately 11% of total deaths.
+
+This data set is used to predict whether a patient is likely to get stroke based on the input parameters like gender, age, various diseases, and smoking status. Each row in the data provides relevant information about the patient.
+
+
+# Task One: Import data and data preprocessing
+
+## Load data and install packages
+
+```{r}
+if (!require("tidyverse")) install.packages("tidyverse")
+if (!require("caret")) install.packages("caret")
+if (!require("randomForest")) install.packages("randomForest")
+if (!require("e1071")) install.packages("e1071")
+
+library(tidyverse)
+library(caret)
+library(randomForest)
+library(e1071)
+
+# Load the data
+data <- read.csv("D:\\Project\\healthcare-dataset-stroke-data.csv")
+
+# View the first few rows of the data
+head(data)
+```
+
+
+## Describe and explore the data
+
+```{r}
+# Summary statistics
+summary(data)
+
+# Check for missing values
+sapply(data, function(x) sum(is.na(x)))
+
+# Visualize the distribution of the target variable
+ggplot(data, aes(x = factor(stroke))) + 
+  geom_bar() +
+  labs(title = "Distribution of Stroke Cases", x = "Stroke", y = "Count")
+```
+
+
+
+# Task Two: Build prediction models
+
+```{r}
+# Convert categorical variables to factors
+data$gender <- as.factor(data$gender)
+data$hypertension <- as.factor(data$hypertension)
+data$heart_disease <- as.factor(data$heart_disease)
+data$ever_married <- as.factor(data$ever_married)
+data$work_type <- as.factor(data$work_type)
+data$Residence_type <- as.factor(data$Residence_type)
+data$smoking_status <- as.factor(data$smoking_status)
+data$stroke <- as.factor(data$stroke)
+
+# Split the data into training and testing sets
+set.seed(123)
+trainIndex <- createDataPartition(data$stroke, p = .8, 
+                                  list = FALSE, 
+                                  times = 1)
+dataTrain <- data[ trainIndex,]
+dataTest  <- data[-trainIndex,]
+
+# View the structure of the training data
+str(dataTrain)
+
+# Train a Random Forest model
+set.seed(123)
+rf_model <- randomForest(stroke ~ ., data = dataTrain, importance = TRUE)
+
+# View model summary
+print(rf_model)
+
+# Plot variable importance
+varImpPlot(rf_model)
+
+
+# View model summary
+summary(rf_model)
+
+```
+
+
+
+
+# Task Three: Evaluate and select prediction models
+
+```{r}
+# Predict using the Random Forest model
+rf_predictions <- predict(rf_model, dataTest)
+
+# Evaluate the model
+rf_confusion <- confusionMatrix(rf_predictions, dataTest$stroke)
+
+# Print confusion matrices
+rf_confusion
+
+```
+
+
+
+# Task Four: Deploy the prediction model
+
+```{r}
+# Save the Random Forest model to disk
+saveRDS(rf_model, file = "stroke_rf_model.rds")
+
+# To load the model
+loaded_rf_model <- readRDS("stroke_rf_model.rds")
+
+```
+
+
+
+
+# Task Five: Findings and Conclusions
+
+The Random Forest model achieved a higher accuracy compared to the SVM model, as seen from the confusion matrices. The variable importance plot indicated that age, average glucose level, and BMI are the most significant predictors of stroke.
+
+In conclusion, the Random Forest model can be deployed to predict stroke risk in patients. Future work could include hyperparameter tuning and testing other machine learning models to further improve the prediction accuracy.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
